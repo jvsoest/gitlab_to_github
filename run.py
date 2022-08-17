@@ -16,3 +16,4 @@ for group in groups:
         archived = x.attributes['archived']
         visibility = x.attributes['visibility']
         default_branch = x.attributes['default_branch']
+        empty_repo = x.attributes['empty_repo']
