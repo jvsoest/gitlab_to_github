@@ -1,6 +1,6 @@
 import gitlab
 
-gl = gitlab.Gitlab('https://gitlab.com', private_token='')
+gl = gitlab.Gitlab('https://gitlab.com', private_token='glpat--Ro8rnCP7iBJ1MhNH13Z')
 groups = gl.groups.list(get_all=True)
 for group in groups:
     visibility = group.attributes['visibility']
@@ -11,6 +11,8 @@ for group in groups:
     myGroup = gl.groups.get(group.attributes['id'])
     projects = myGroup.projects.list()
     for x in projects:
-        project = gl.projects.get(x.attributes["id"])
-        print(x.attributes["ssh_url_to_repo"])
-        print(x)
+        # project = gl.projects.get(x.attributes["id"])
+        ssh_url = x.attributes["ssh_url_to_repo"]
+        archived = x.attributes['archived']
+        visibility = x.attributes['visibility']
+        default_branch = x.attributes['default_branch']
