@@ -1,7 +1,7 @@
 import gitlab
 import subprocess
 
-def loop_repositories(gitlab_url, private_token, group_name):
+def loop_repositories(gitlab_url, private_token, group_name, org_name):
     gl = gitlab.Gitlab(gitlab_url, private_token=private_token)
     groups = gl.groups.list(get_all=True)
     for group in groups:
@@ -30,7 +30,7 @@ def loop_repositories(gitlab_url, private_token, group_name):
                 'visibility': visibility,
                 'default_branch': default_branch,
                 'empty_repo': empty_repo
-            })
+            }, group_name, org_name)
 
 def call_cmd(myCommand):
     myCall = subprocess.Popen(myCommand, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -41,8 +41,8 @@ def call_cmd(myCommand):
     else:
         return True, output.decode("utf-8").replace("\n","")
 
-def create_github_repository(repository_info):
-    repo_name = "mdw-nl/" + repository_info['path'].replace("/", "_")
+def create_github_repository(repository_info, group_name, org_name):
+    repo_name = org_name + "/" + repository_info['path'].replace(group_name+"/", "").replace("/", "_")
     myCommand = 'gh repo create ' + repo_name + " --" + repository_info['visibility']
     ssh_url = "git@github.com:" + repo_name
 
@@ -63,10 +63,14 @@ def perform_migration(gitlab_info, github_info):
     print(success)
     print(output)
 
-def process_repository(gl, gitlab_info):
+def process_repository(gl:gitlab.Gitlab, gitlab_info, group_name, org_name):
     print(gitlab_info)
-    github_info = create_github_repository(gitlab_info)
+    github_info = create_github_repository(gitlab_info, group_name, org_name)
     perform_migration(gitlab_info, github_info)
+    
+    # Archive gitlab project
+    project = gl.projects.get(gitlab_info['id'])
+    project.archive()
 
     # Set default branch
     call_cmd("gh repo edit " + github_info['repo_name'] + " --default-branch " + gitlab_info['default_branch'])
@@ -75,5 +79,6 @@ if __name__ == "__main__":
     loop_repositories(
         "https://gitlab.com",
         "glpat--Ro8rnCP7iBJ1MhNH13Z",
-        "medicaldataworks"
+        "medicaldataworks",
+        "mdw-nl"
     )
