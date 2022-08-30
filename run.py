@@ -2,6 +2,9 @@ import gitlab
 import subprocess
 
 def loop_repositories(gitlab_url, private_token, group_name, org_name):
+    """
+    Loop over all repositories for a given group_name
+    """
     gl = gitlab.Gitlab(gitlab_url, private_token=private_token)
     groups = gl.groups.list(get_all=True)
     for group in groups:
@@ -33,6 +36,9 @@ def loop_repositories(gitlab_url, private_token, group_name, org_name):
             }, group_name, org_name)
 
 def call_cmd(myCommand):
+    """
+    Generic function to call a command-line script
+    """
     myCall = subprocess.Popen(myCommand, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, errors = myCall.communicate()
     myCall.wait()
@@ -42,6 +48,9 @@ def call_cmd(myCommand):
         return True, output.decode("utf-8").replace("\n","")
 
 def create_github_repository(repository_info, group_name, org_name):
+    """
+    Create GitHub repository using logged in gh cli command
+    """
     repo_name = org_name + "/" + repository_info['path'].replace(group_name+"/", "").replace("/", "_")
     myCommand = 'gh repo create ' + repo_name + " --" + repository_info['visibility']
     ssh_url = "git@github.com:" + repo_name
@@ -57,6 +66,9 @@ def create_github_repository(repository_info, group_name, org_name):
         None
 
 def perform_migration(gitlab_info, github_info):
+    """
+    Perform the actual git migration
+    """
     migrate_cmd = f"bash git_shell_move.sh {gitlab_info['ssh_url']} {github_info['ssh_url']} {github_info['repo_url']}"
     print(migrate_cmd)
     success, output = call_cmd(migrate_cmd)
@@ -64,6 +76,9 @@ def perform_migration(gitlab_info, github_info):
     print(output)
 
 def process_repository(gl:gitlab.Gitlab, gitlab_info, group_name, org_name):
+    """
+    Process an individual GitLab project
+    """
     print(gitlab_info)
     github_info = create_github_repository(gitlab_info, group_name, org_name)
     perform_migration(gitlab_info, github_info)
