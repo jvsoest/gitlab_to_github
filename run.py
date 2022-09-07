@@ -7,6 +7,7 @@ def loop_repositories(gitlab_url, private_token, group_name, org_name):
     """
     gl = gitlab.Gitlab(gitlab_url, private_token=private_token)
     groups = gl.groups.list(get_all=True)
+    process_repo = False
     for group in groups:
         visibility = group.attributes['visibility']
         full_path = group.attributes['full_path']
@@ -14,7 +15,7 @@ def loop_repositories(gitlab_url, private_token, group_name, org_name):
         if not full_path.startswith(group_name):
             continue
         myGroup = gl.groups.get(group.attributes['id'])
-        projects = myGroup.projects.list()
+        projects = myGroup.projects.list(get_all=True)
         for x in projects:
             # project = gl.projects.get(x.attributes["id"])
             ssh_url = x.attributes["ssh_url_to_repo"]
@@ -25,6 +26,13 @@ def loop_repositories(gitlab_url, private_token, group_name, org_name):
             default_branch = x.attributes['default_branch']
             empty_repo = x.attributes['empty_repo']
 
+            repo_name = org_name + "/" + path_with_namespace.replace(group_name+"/", "").replace("/", "_")
+            print(str(archived) + "," + path_with_namespace + "," + repo_name)
+            
+            if visibility=="internal":
+                visibility = "private"
+            
+            if process_repo:
             process_repository(gl, {
                 'id': repo_id,
                 'ssh_url': ssh_url,
@@ -34,6 +42,9 @@ def loop_repositories(gitlab_url, private_token, group_name, org_name):
                 'default_branch': default_branch,
                 'empty_repo': empty_repo
             }, group_name, org_name)
+
+            if path_with_namespace == 'UM-CDS/fair/tools/r2rml':
+                process_repo = True
 
 def call_cmd(myCommand):
     """
@@ -53,6 +64,10 @@ def create_github_repository(repository_info, group_name, org_name):
     """
     repo_name = org_name + "/" + repository_info['path'].replace(group_name+"/", "").replace("/", "_")
     myCommand = 'gh repo create ' + repo_name + " --" + repository_info['visibility']
+    print("==================================================")
+    print("================ Create Repo =====================")
+    print(myCommand)
+    print("==================================================")
     ssh_url = "git@github.com:" + repo_name
 
     success, output = call_cmd(myCommand)
@@ -63,7 +78,8 @@ def create_github_repository(repository_info, group_name, org_name):
             'repo_url': output
         }
     else:
-        None
+        print(output)
+        return None
 
 def perform_migration(gitlab_info, github_info):
     """
@@ -94,6 +110,6 @@ if __name__ == "__main__":
     loop_repositories(
         "https://gitlab.com",
         "glpat--Ro8rnCP7iBJ1MhNH13Z",
-        "medicaldataworks",
-        "mdw-nl"
+        "UM-CDS",
+        "maastrichtu-cds"
     )
